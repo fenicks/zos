@@ -162,8 +162,3 @@ func main() {
 	}
 	log.Info().Msg("provision engine stopped")
 }
-
-type store interface {
-	provision.ReservationPoller
-	provision.Feedbacker
-}

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfexplorer/client"
 	"github.com/threefoldtech/zos/pkg"
@@ -90,6 +92,91 @@ func (s *pollSource) Reservations(ctx context.Context) <-chan *Reservation {
 
 			if err == ErrPollEOS {
 				return
+			}
+		}
+	}()
+
+	return ch
+}
+
+type WSSource struct {
+	nodeID         string
+	inputConv      ReservationConverterFunc
+	provisionOrder map[ReservationType]int
+}
+
+func NewWSSource(nodeID string, inputConv ReservationConverterFunc, provisionOrder map[ReservationType]int) *WSSource {
+	return &WSSource{
+		nodeID:         nodeID,
+		inputConv:      inputConv,
+		provisionOrder: provisionOrder,
+	}
+}
+
+func (s *WSSource) Reservations(ctx context.Context) <-chan *Reservation {
+	ch := make(chan *Reservation)
+
+	u := fmt.Sprintf("ws://localhost:8080/explorer/reservations/workloads/%s/subscribe", s.nodeID)
+
+	ws, _, err := websocket.DefaultDialer.Dial(u, nil)
+	if err != nil {
+		log.Error().Str("url", u).Msgf("dial: %v", err)
+	}
+
+	go func() {
+		defer func() {
+			close(ch)
+			ws.Close()
+		}()
+
+		log.Info().Msg("start streaming")
+		var wrklList []client.IntermediateWL // TODO: we should not need something like this
+
+		for {
+			select {
+
+			case <-ctx.Done():
+				err := ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+				if err != nil {
+					log.Error().Err(err).Msg("write close")
+				}
+				return
+
+			default:
+
+				if err := ws.ReadJSON(&wrklList); err != nil {
+					log.Error().Err(err).Msg("read:")
+					return
+				}
+
+				log.Info().Msgf("received %d reservations", len(wrklList))
+
+				result := make([]*Reservation, 0, len(wrklList))
+				for _, wl := range wrklList {
+					tmp, err := wl.Workload()
+					if err != nil {
+						return
+						log.Error().Err(err).Send()
+					}
+					r, err := s.inputConv(tmp)
+					if err != nil {
+						log.Error().Err(err).Send()
+						return
+					}
+
+					result = append(result, r)
+				}
+
+				if s.provisionOrder != nil {
+					// sorts the workloads in the oder they need to be processed by provisiond
+					sort.Slice(result, func(i int, j int) bool {
+						return s.provisionOrder[result[i].Type] < s.provisionOrder[result[j].Type]
+					})
+				}
+
+				for _, r := range result {
+					ch <- r
+				}
 			}
 		}
 	}()
