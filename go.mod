@@ -18,12 +18,15 @@ require (
 	github.com/firecracker-microvm/firecracker-go-sdk v0.19.1-0.20200110212531-741fc8cb0f2e
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gizak/termui/v3 v3.1.0
+	github.com/go-delve/delve v1.4.1
 	github.com/go-redis/redis v6.15.5+incompatible
+	github.com/gologme/log v1.2.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6
+	github.com/mr-tron/base58 v1.1.3
 	github.com/opencontainers/runtime-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.18.0
@@ -36,6 +39,7 @@ require (
 	github.com/vishvananda/netlink v1.0.0
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
 	github.com/whs/nacl-sealed-box v0.0.0-20180930164530-92b9ba845d8d
+	github.com/yggdrasil-network/yggdrasil-go v0.3.15-0.20200526002434-ed3bf5ef0736
 	go.etcd.io/bbolt v1.3.4 // indirect
 	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
